@@ -10,12 +10,26 @@ Make sure you have the current React Native tools installed (not the Expo one)
 
 Simply use the following command :
 ```
-npm Install
+npm install
 ```
+
+Standard way to install dependencies into a NodeJS program.
+
 
 # Android / iOS
 
 The app is ready to go
+
+```
+react-native run-android
+```
+
+or
+
+```
+react-native run-ios
+```
+
 
 # State
 
