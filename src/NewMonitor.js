@@ -9,6 +9,12 @@ import CustomTextInput from './components/CustomTextInput'
 export default class NewMonitor extends Component {
   static propTypes = {
     onCreatePress: PropTypes.func.isRequired,
+    monitor: PropTypes.shape({
+      _id: PropTypes.number.isRequired,
+      name: PropTypes.string.isRequired,
+      host: PropTypes.string.isRequired,
+      port: PropTypes.number.isRequired
+    })
   }
 
   state = {
@@ -26,9 +32,37 @@ export default class NewMonitor extends Component {
     }
   }
 
+  constructor(props) {
+    super(props);
+
+    const { monitor } = this.props;
+    this.exist_name = monitor ? ""+monitor.name : "";
+    this.exist_host = monitor ? ""+monitor.host : "";
+    this.exist_port = monitor ? ""+monitor.port : "";
+    this.button = monitor ? "Edit" : "Create new Monitor";
+
+    this.state = {
+      name: this.exist_name,
+      host: this.exist_host,
+      port: this.exist_port
+    };
+  }
+
+  onCreatePress(name, host, port) {
+    const { monitor } = this.props;
+
+    port = parseInt(port);
+    if(monitor) {
+      monitor.name = name;
+      monitor.host = host;
+      monitor.port = port;
+    }
+
+    this.props.onCreatePress(name, host, port, monitor);
+  }
+
   render () {
     const { host, name, port } = this.state;
-    const { onCreatePress } = this.props;
     const isValid = host !== '' && name !== '' && port !== '';
 
     return (
@@ -39,6 +73,7 @@ export default class NewMonitor extends Component {
             placeholder={'Name'}
             returnKeyType={'next'}
             blurOnSubmit={false}
+            text={this.exist_name}
             withRef={true}
             onSubmitEditing={() => this.hostInputRef.focus()}
             onChangeText={(value) => this.setState({ name: value })}
@@ -48,6 +83,7 @@ export default class NewMonitor extends Component {
             placeholder={'Host name/ip'}
             returnKeyType={'next'}
             blurOnSubmit={false}
+            text={this.exist_host}
             withRef={true}
             onSubmitEditing={() => this.portInputRef.focus()}
             onChangeText={(value) => this.setState({ host: value })}
@@ -57,6 +93,7 @@ export default class NewMonitor extends Component {
             placeholder={'Port'}
             returnKeyType={'done'}
             keyboardType="numeric"
+            text={this.exist_port}
             withRef={true}
             onChangeText={(value) => this.setState({ port: value })}
           />
@@ -64,12 +101,12 @@ export default class NewMonitor extends Component {
         <View style={styles.footer}>
           <View ref={(ref) => this.buttonRef = ref} animation={'bounceIn'} duration={600} delay={400}>
             <CustomButton
-              onPress={() => onCreatePress(name, host, port)}
+              onPress={() => this.onCreatePress(name, host, port)}
               enabled={isValid}
               isEnabled={isValid}
               buttonStyle={styles.createMonitorButton}
               textStyle={styles.createMonitorButtonText}
-              text={'Create new Monitor'}
+              text={this.button}
             />
           </View>
         </View>

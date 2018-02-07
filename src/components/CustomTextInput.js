@@ -7,7 +7,8 @@ const IS_ANDROID = Platform.OS === 'android'
 
 export default class AuthTextInput extends Component {
   static propTypes = {
-    isEnabled: PropTypes.bool
+    isEnabled: PropTypes.bool,
+    text: PropTypes.string
   }
 
   state = {
@@ -17,7 +18,7 @@ export default class AuthTextInput extends Component {
   focus = () => this.textInputRef.focus()
 
   render () {
-    const { isEnabled, ...otherProps } = this.props
+    const { isEnabled, text, ...otherProps } = this.props
     const { isFocused } = this.state
     const color = isEnabled ? 'white' : 'rgba(255,255,255,0.4)'
     const borderColor = isFocused ? 'white' : 'rgba(255,255,255,0.4)'
@@ -30,6 +31,7 @@ export default class AuthTextInput extends Component {
             autoCorrect={false}
             style={[styles.textInput, { color }]}
             maxLength={32}
+            defaultValue={text}
             underlineColorAndroid={'transparent'}
             placeholderTextColor={'rgba(255,255,255,0.4)'}
             selectionColor={'white'}

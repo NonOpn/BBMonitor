@@ -6,7 +6,12 @@
     "start": "node node_modules/react-native/local-cli/cli.js start",
     "test": "jest",
     "clear": "rm -rf node_modules/ ; npm install ; rm -rf $TMPDIR/react* ; npm start --reset-cache",
-    "build:ios": "react-native bundle --entry-file='index.js' --bundle-output='./ios/main.jsbundle' --dev=false --platform='ios' --assets-dest='./ios'"
+    "build:ios": "react-native bundle --entry-file='index.js' --bundle-output='./ios/main.jsbundle' --dev=false --platform='ios' --assets-dest='./ios'",
+    "build:android": "react-native bundle --entry-file='index.js' --bundle-output='./android/app/src/main/assets/index.android.bundle' --dev=false --platform='android' --assets-dest='./android'"
+  },
+  "resolutions": {
+    "uglify-es": "3.2.2",
+    "uglify-js": "github:alexlamsl/UglifyJS2#issue-2449"
   },
   "browser": {
     "net": "react-native-tcp",
@@ -23,6 +28,10 @@
     ]
   },
   "dependencies": {
+    "eventemitter2": "^5.0.0",
+    "immutability-helper": "^2.6.2",
+    "miner-monitor": "git+https://github.com/NonOpn/node-miner-monitor.git",
+    "moment": "^2.20.1",
     "react": "16.0.0",
     "react-native": "0.51.0",
     "react-native-animatable": "^1.2.4",
@@ -30,12 +39,14 @@
     "react-native-elements": "^0.18.5",
     "react-native-material-ui": "^1.18.0",
     "react-native-store": "^0.4.1",
+    "react-native-svg": "^6.0.1-rc.1",
     "react-native-tcp": "^3.3.0",
     "react-native-vector-icons": "^4.4.3",
     "readable-stream": "^2.3.3",
     "rn-viewpager": "^1.2.9",
     "stream": "0.0.2",
-    "stream-browserify": "^2.0.1"
+    "stream-browserify": "^2.0.1",
+    "victory-native": "^0.16.5"
   },
   "devDependencies": {
     "babel-jest": "22.0.4",

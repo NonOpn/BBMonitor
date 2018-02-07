@@ -14,68 +14,44 @@ import {
 import { Card, ListItem, Icon, Button } from 'react-native-elements'
 import { Badge, Toolbar, ActionButton, RippleFeedback, Drawer, Avatar, COLOR, ThemeProvider } from "react-native-material-ui";
 
-import DataRetriever from "./DataRetriever";
+import ChartView from "./ChartView";
+
+import monitor_manager from "./rig/MonitorManager";
+import HashrateUtils from "./rig/HashrateUtils";
 
 export default class DeviceView extends React.Component {
   constructor(props) {
     super(props);
 
     this.monitor = props.monitor;
-
-    this.data_retriever = new DataRetriever(this.monitor);
+    this.mounted = false;
+    this.listeners = [];
 
     this.state = {
       last: "waiting",
       data: undefined
     }
+
+    this.onData =  (object) => {
+      if(this.mounted) {
+        const data = object.data;
+
+        this.setState({
+          last: object.last,
+          data: object.data || this.state.data
+        });
+      }
+    };
   }
 
   componentDidMount() {
-    console.warn("mounted " + this.monitor.name);
-    const code = Math.random();
-    this.code = code;
-
-    setTimeout(() => {
-      this.callHost();
-    }, 100);
+    this.mounted = true;
+    monitor_manager.on(this.monitor._id, this.onData);
   }
 
   componentWillUnmount() {
-    console.warn("unmounted " + this.monitor.name);
-    this.code = Math.random();
-  }
-
-  callHost() {
-    const code = this.code;
-    this.setState({
-      last: "waiting"
-    });
-
-    this.data_retriever.call()
-    .then(data => {
-      if(!data) throw "error";
-      this.setState({
-        last: "ok",
-        data: data
-      });
-      this.recall(code);
-    })
-    .catch(err => {
-      this.setState({
-        last: "error",
-        data : undefined
-      });
-
-      this.recall(code);
-    })
-  }
-
-  recall(code) {
-    setTimeout(() => {
-      if(this.code == code) {
-        this.callHost();
-      }
-    }, 5000);
+    this.mounted = false;
+    monitor_manager.removeListener(this.monitor.name, this.onData);
   }
 
   getColorFromLast() {
@@ -94,27 +70,59 @@ export default class DeviceView extends React.Component {
     }
   }
 
+  toggle() {
+    this.setState({
+      expand: this.state.expand ? false : true
+    });
+  }
+
+  edit() {
+    this.props.onEdit(this.monitor);
+  }
+
   render() {
+    if(!this.chartview) this.chartview = (<ChartView monitor={this.monitor}/>);
+    var gpu_index = 0;
     const monitor = this.monitor;
     const { last, data } = this.state;
+
     return (
-      <RippleFeedback key={monitor.name}  onPress={() => {}}>
+      <RippleFeedback key={monitor.name}  onPress={() => this.toggle()} onLongPress={() => this.edit()}>
         <Card containerStyle={styles.cardList}
           flexDirection="row">
-          <Badge text=" " style={this.getColorFromLast()}>
-            <View style={{flex: 1}}>
+            <View style={{flex: 1, width:"100%"}}>
+
             <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between'}}>
-                <Text style={styles.rippledText}>{monitor.name}</Text>
+                <Badge text=" " style={this.getColorFromLast()}>
+                  <Text style={styles.rippledText}>{monitor.name}</Text>
+                  </Badge>
                 </View>
                 {
                   data &&
-                  <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between'}}>
-                    <Text style={styles.halfSizeText}>Hashrate : </Text>
-                    <Text style={styles.halfSizeText}>{data.total.eth.hashrate}</Text>
-                  </View>
+
+                      <View style={{flex: 1, width:'100%',alignItems: 'stretch', flexDirection: 'column', justifyContent: 'space-between'}}>
+                        <View style={chart.container} pointerEvents="none">
+                        <View style={{flex: 1, position: "absolute", top: 0, flexDirection: 'row', justifyContent: 'space-between'}}>
+                          <Text style={styles.halfSizeText}>Hashrate : </Text>
+                          <Text style={styles.halfSizeText}>{HashrateUtils.sanitizeHashrate(data.total.eth.hashrate)}</Text>
+                        </View>
+                        { this.chartview }
+                        </View>
+                        { this.state.expand &&
+                          data.gpus.map(gpu =>
+                            <View style={{flex: 1, flexDirection: 'column'}}>
+                              <View style={styles.gpuStatus} flexDirection="row">
+                                <Text style={styles.gpuStatus}>GPU{++gpu_index} : </Text>
+                              </View>
+                              <View style={styles.gpuStatusList} containerStyle={styles.cardBlue} flexDirection="row">
+                                <Text style={styles.halfSizeText}>Hashrate : </Text>
+                                <Text style={styles.halfSizeText}>{HashrateUtils.sanitizeHashrate(data.total.eth.hashrate)}</Text>
+                              </View>
+                            </View>)
+                        }
+                      </View>
                 }
             </View>
-          </Badge>
         </Card>
       </RippleFeedback>
     )
@@ -142,6 +150,12 @@ const error = {
     marginTop: -8
   }
 }
+var chart = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -150,42 +164,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  action: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0
+  gpuStatus: {
+    margin: 0,
+    padding: 0,
+    paddingTop: 4,
+    paddingLeft: 4
   },
-  list: {
-    flex: 1,
-    height: "100%"
-  },
-  viewWithSearch: {
-    backgroundColor: "#000000aa",
-    flex: 1,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    paddingTop: 50,
-    height: "100%",
-    alignItems: 'center',
-  },
-  viewWithSearchEmpty: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 50,
-    alignItems: 'center',
-  },
-  searchView: {
-    alignItems: 'center',
-    justifyContent: 'center'
+  gpuStatusList: {
+    margin: 0,
+    padding: 0,
+    paddingLeft: 8,
   },
   padding: {
     paddingBottom: 20
   },
   cardList: {
-    padding: 0
+    padding: 0,
+  },
+  cardBlue: {
+    padding:0,
+    backgroundColor: "blue"
   },
   rippledText: {
     margin: 8
@@ -193,19 +191,15 @@ const styles = StyleSheet.create({
   halfSizeText: {
     margin: 8,
   },
-  textMenu: {
-    flex:1,
-    paddingLeft: 10,
-    paddingRight: 10
-  },
-  iconMenu: {
-  }
 });
 
 DeviceView.propTypes = {
   monitor: PropTypes.shape({
+    _id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
     host: PropTypes.string.isRequired,
     port: PropTypes.number.isRequired
-  }).isRequired
+  }).isRequired,
+  database: PropTypes.object.isRequired,
+  onEdit: PropTypes.func.isRequired
 }

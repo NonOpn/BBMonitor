@@ -12,8 +12,10 @@ import {
   StatusBar
 } from 'react-native';
 import { Card, ListItem, Icon, Button } from 'react-native-elements'
-import { Toolbar, ActionButton, RippleFeedback, Drawer, Avatar, COLOR, ThemeProvider } from "react-native-material-ui";
+import { Toolbar, ActionButton, ThemeProvider } from "react-native-material-ui";
 
+
+import monitor_manager from "./rig/MonitorManager";
 import NewMonitor from "./NewMonitor"
 import DeviceView from "./DeviceView";
 
@@ -26,11 +28,11 @@ const uiTheme = {
     primaryColor: ColorPrimary,
     accentColor: ColorPrimary
   },
-    toolbar: {
-        container: {
-            height: 56
-        }
-    }
+  toolbar: {
+      container: {
+          height: 56
+      }
+  }
 }
 
 export default class Monitors extends React.Component {
@@ -52,6 +54,14 @@ export default class Monitors extends React.Component {
     });
   }
 
+  componentDidMount() {
+    monitor_manager.start();
+  }
+
+  componentWillUnmount() {
+    monitor_manager.stop();
+  }
+
   sort(monitors) {
     return monitors.sort((left, right) => {
       if (left.name < right.name) return -1;
@@ -63,8 +73,13 @@ export default class Monitors extends React.Component {
   reloadDevices() {
     this.database.getMonitors()
     .then(monitors => {
-      console.warn(monitors);
       monitors = this.sort(monitors);
+
+      monitors.forEach(monitor => {
+        monitor_manager.addNewWorker(""+monitor._id, monitor.host, monitor.port);
+        //addWorker will start it if in started position
+      });
+
       this.setState({
         monitors: monitors
       });
@@ -76,9 +91,17 @@ export default class Monitors extends React.Component {
     });
   }
 
+  edit(monitor) {
+    this.setState({
+      form: true,
+      editing_monitor: monitor
+    })
+  }
+
   onShowForm() {
     this.setState({
-      form: true
+      form: true,
+      editing_monitor: undefined
     })
   }
 
@@ -88,26 +111,35 @@ export default class Monitors extends React.Component {
     })
   }
 
-  onCreatePress(name, host, port) {
-    port = parseInt(port);
-    this.database.addMonitor({
-      name: name,
-      host: host,
-      port: port
-    })
-    .then(monitors => {
-      this.onBackCalled();
-      this.reloadDevices();
-    })
+  onCreatePress(name, host, port, existing_monitor) {
+    if(existing_monitor) {
+      this.database.update(existing_monitor)
+      .then(monitor => {
+        this.onBackCalled();
+        this.reloadDevices();
+      })
+      .catch(err => console.warn(err));
+    } else {
+      this.database.addMonitor({
+        name: name,
+        host: host,
+        port: port
+      })
+      .then(monitors => {
+        this.onBackCalled();
+        this.reloadDevices();
+      })
+    }
   }
 
   render() {
+
+    monitor_manager.start();
     StatusBar.setBarStyle('light-content', true);
 
-    const { loadingDevice } = this.state;
+    const { loadingDevice, editing_monitor } = this.state;
     var is_form = this.state.form;
     if(undefined == is_form) is_form = false;
-    console.warn(is_form);
 
     return (
       <ThemeProvider key="one" uiTheme={uiTheme} children={this.empty}>
@@ -117,21 +149,27 @@ export default class Monitors extends React.Component {
           leftElement={is_form ? "arrow-back" : ""}
           onLeftElementPress={() => this.onBackCalled()}
           centerElement="BB Monitor"/>
+           {
+             this.state.monitors.length == 0 &&
+             <View style={styles.empty_item}>
+              <Text style={styles.empty_item_text}>Add a new monitor to start</Text>
+             </View>
+           }
         {!is_form &&
           <ScrollView scrollsToTop={false} style={styles.list}>
             { this.state.monitors.map(monitor =>
-              <DeviceView key={monitor.name} monitor={monitor}/>
+              <DeviceView database={this.database} key={""+monitor._id} monitor={monitor} onEdit={(monitor) => this.edit(monitor)}/>
             )}
             <View style={styles.padding}/>
           </ScrollView>
           }
         {!is_form &&
-          <ActionButton onPress={() => this.onShowForm()} style={styles.action} icon="add" rippleColor="#ffffff"/>
+          <ActionButton key="add" onPress={() => this.onShowForm()} style={{position: 'absolute',right: 0,bottom: 0}} icon="add" rippleColor="#ffffff"/>
         }
 
         {is_form &&
           <View style={{padding:16, width:"100%", height:"100%", backgroundColor: ColorPrimary}} >
-            <NewMonitor onCreatePress={(n, h, p) => this.onCreatePress(n,h,p)}/>
+            <NewMonitor monitor={editing_monitor} onCreatePress={(n, h, p, e) => this.onCreatePress(n,h,p, e)}/>
           </View>
         }
 
@@ -144,13 +182,7 @@ export default class Monitors extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  action: {
+  add: {
     position: 'absolute',
     right: 0,
     bottom: 0
@@ -159,43 +191,19 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%"
   },
-  viewWithSearch: {
-    backgroundColor: "#000000aa",
-    flex: 1,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    paddingTop: 50,
-    height: "100%",
-    alignItems: 'center',
-  },
-  viewWithSearchEmpty: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 50,
-    alignItems: 'center',
-  },
-  searchView: {
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
   padding: {
     paddingBottom: 20
   },
-  cardList: {
-    padding: 0
+  empty_item: {
+    position: 'absolute',
+    top: 0, left: 0,
+    right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: 18
   },
-  rippledText: {
-    margin: 8
-  },
-  textMenu: {
-    flex:1,
-    paddingLeft: 10,
-    paddingRight: 10
-  },
-  iconMenu: {
+  empty_item_text: {
+    fontSize: 18
   }
 });
 
