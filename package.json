@@ -6,12 +6,11 @@
     "start": "node node_modules/react-native/local-cli/cli.js start",
     "test": "jest",
     "clear": "rm -rf node_modules/ ; npm install ; rm -rf $TMPDIR/react* ; npm start --reset-cache",
-    "build:ios": "react-native bundle --entry-file='index.js' --bundle-output='./ios/main.jsbundle' --dev=false --platform='ios' --assets-dest='./ios'",
-    "build:android": "react-native bundle --entry-file='index.js' --bundle-output='./android/app/src/main/assets/index.android.bundle' --dev=false --platform='android' --assets-dest='./android'"
+    "build:ios": "react-native bundle --entry-file='index.js' --bundle-output='./ios/main.jsbundle' --dev=true --platform='ios' --assets-dest='./ios'",
+    "build:android": "react-native bundle --entry-file='index.js' --bundle-output='./android/app/src/main/assets/index.android.bundle' --dev=true --platform='android' --assets-dest='./android'"
   },
   "resolutions": {
-    "uglify-es": "3.2.2",
-    "uglify-js": "github:alexlamsl/UglifyJS2#issue-2449"
+    "uglify-es": "3.2.2"
   },
   "browser": {
     "net": "react-native-tcp",
