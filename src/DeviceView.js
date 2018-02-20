@@ -116,7 +116,7 @@ export default class DeviceView extends React.Component {
                               </View>
                               <View style={styles.gpuStatusList} containerStyle={styles.cardBlue} flexDirection="row">
                                 <Text style={styles.halfSizeText}>Hashrate : </Text>
-                                <Text style={styles.halfSizeText}>{HashrateUtils.sanitizeHashrate(data.total.eth.hashrate)}</Text>
+                                <Text style={styles.halfSizeText}>{HashrateUtils.sanitizeHashrate(gpu.hashrate)}</Text>
                               </View>
                             </View>)
                         }
